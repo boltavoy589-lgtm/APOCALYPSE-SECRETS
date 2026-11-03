@@ -1,49 +1,39 @@
-name: APOCALYPSE SECRETS Video
+import os, json, requests
 
-on:
-  workflow_dispatch:
+API_KEY = os.environ["GEMINI_API_KEY"]
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+URL = f"https://generativelanguage.googleapis.com/v1beta/models/{MODEL}:generateContent"
 
-permissions:
-  contents: read
+PROMPT = """You write scripts for MINDSPARK, a YouTube Shorts channel about psychology, mind facts, science and AI.
+Write ONE short script (35-45 seconds, 90-110 words) in English.
+Rules:
+- Start with a strong hook in the first sentence.
+- Use one true, well-known fact. Never invent studies or numbers.
+- Simple words, short sentences.
+- End with a short question to the viewer.
+Return ONLY JSON with keys:
+"topic", "script", "title" (max 60 chars),
+"description" (2-3 sentences plus 3 hashtags including #Shorts),
+"tags" (list of 8 short strings),
+"visual_keywords" (list of 6 single English words for stock footage).
+"""
 
-jobs:
-  make:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+def main():
+    r = requests.post(
+        URL,
+        headers={"x-goog-api-key": API_KEY, "Content-Type": "application/json"},
+        json={
+            "contents": [{"parts": [{"text": PROMPT}]}],
+            "generationConfig": {"responseMimeType": "application/json", "temperature": 1.0},
+        },
+        timeout=120,
+    )
+    r.raise_for_status()
+    text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+    data = json.loads(text)
+    with open("script.json", "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+    print(json.dumps(data, ensure_ascii=False, indent=2))
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install FFmpeg
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg
-          ffmpeg -version
-          ffprobe -version
-
-      - name: Install Python packages
-        run: pip install requests gTTS Pillow moviepy
-
-      - name: Generate script
-        env:
-          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
-        run: python generate_script.py
-
-      - name: Create video
-        run: python make_video.py
-
-      - name: Upload generated files
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: apocalypse-secrets-video
-          path: |
-            *.mp4
-            script.json
-          if-no-files-found: warn
+if __name__ == "__main__":
+    main()
