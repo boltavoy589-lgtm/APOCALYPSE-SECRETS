@@ -15,7 +15,7 @@ Rules:
 Return ONLY a JSON object (no markdown, no extra text) with keys:
 "topic", "script", "title" (max 60 chars),
 "description" (2-3 sentences ending with "Fiction and speculation." plus 3 hashtags including #Shorts),
-"tags" (list of 8 short strings), "visual_keywords" (list of 6 English words).
+"tags" (list of 8 short strings), "visual_keywords" (list of 7 stock-footage search phrases of 2-3 English words each, dark and moody, no people's faces, no brand names, e.g. "foggy empty street", "abandoned building night", "dark forest mist").
 """
 
 def main():
