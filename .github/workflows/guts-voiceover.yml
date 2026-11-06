@@ -1,0 +1,48 @@
+name: Guts 1-kun ovoz qo'shish
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "guts-day1/narrate.py"
+      - "guts-day1/*.srt"
+      - ".github/workflows/guts-voiceover.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  voiceover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - run: pip install edge-tts gTTS
+
+      - name: O'zbekcha diktor ovozini qo'shish
+        working-directory: guts-day1
+        run: python narrate.py --video guts-1-kun-jonli.mp4 --srt guts-1-kun-subtitr.srt --out out/guts-1-kun-ovozli.mp4
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: guts-1-kun-ovozli
+          path: guts-day1/out/guts-1-kun-ovozli.mp4
+          if-no-files-found: error
+
+      - name: Natijani repoga saqlash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add guts-day1/out/guts-1-kun-ovozli.mp4
+          git commit -m "Guts 1-kun: ovozli video [skip ci]" || echo "o'zgarish yo'q"
+          git push
